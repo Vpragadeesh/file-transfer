@@ -1,50 +1,114 @@
 package main
 
 import (
-	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"path/filepath"
+    "encoding/json"
+    "fmt"
+    "io"
+    "net"
+    "net/http"
+    "os"
+    "path/filepath"
+
+    "github.com/mdp/qrterminal/v3"
 )
 
-const uploadDir = "./uploads"
+const (
+    uploadDir  = "./uploads"
+    staticDir  = "./static"
+    serverPort = "8080"
+)
 
 func main() {
-	// Create uploads directory if it doesn't exist
-	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
-		os.Mkdir(uploadDir, 0755)
-	}
+    // 1) Ensure uploads directory exists
+    if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
+        if err := os.Mkdir(uploadDir, 0755); err != nil {
+            fmt.Fprintf(os.Stderr, "Error creating upload directory: %v\n", err)
+            os.Exit(1)
+        }
+    }
 
-	http.Handle("/", http.FileServer(http.Dir("./static")))
-	http.HandleFunc("/upload", uploadHandler)
-	http.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(uploadDir))))
+    // 2) Routes
+    http.Handle("/", http.FileServer(http.Dir(staticDir)))       // single‑page UI
+    http.HandleFunc("/upload", uploadHandler)                    // handle uploads
+    http.Handle("/files/", http.StripPrefix("/files/",           // serve saved files
+        http.FileServer(http.Dir(uploadDir))))
+    http.HandleFunc("/api/files", filesAPIHandler)               // JSON file list
 
-	fmt.Println("Server started at http://localhost:8080")
-	http.ListenAndServe(":8080", nil)
+    // 3) Print access URLs + QR code
+    ip := getLocalIP()
+    fmt.Println("Server started at:")
+    fmt.Printf("→ http://localhost:%s/\n", serverPort)
+    if ip != "" {
+        url := fmt.Sprintf("http://%s:%s/", ip, serverPort)
+        fmt.Printf("→ %s\n", url)
+        qrterminal.Generate(url, qrterminal.L, os.Stdout)
+    }
+
+    // 4) Start HTTP server
+    if err := http.ListenAndServe(":"+serverPort, nil); err != nil {
+        fmt.Fprintf(os.Stderr, "Server error: %v\n", err)
+        os.Exit(1)
+    }
 }
 
+// uploadHandler saves an incoming file then redirects back to “/”
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
+    if r.Method != http.MethodPost {
+        http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+        return
+    }
+    file, header, err := r.FormFile("file")
+    if err != nil {
+        http.Error(w, "Error reading file: "+err.Error(), http.StatusBadRequest)
+        return
+    }
+    defer file.Close()
 
-	file, header, err := r.FormFile("file")
-	if err != nil {
-		http.Error(w, "Error reading file", http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
+    dstPath := filepath.Join(uploadDir, filepath.Base(header.Filename))
+    dst, err := os.Create(dstPath)
+    if err != nil {
+        http.Error(w, "Unable to create file: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+    defer dst.Close()
 
-	dst, err := os.Create(filepath.Join(uploadDir, header.Filename))
-	if err != nil {
-		http.Error(w, "Unable to create file", http.StatusInternalServerError)
-		return
-	}
-	defer dst.Close()
+    if _, err := io.Copy(dst, file); err != nil {
+        http.Error(w, "Error saving file: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-	io.Copy(dst, file)
+    http.Redirect(w, r, "/", http.StatusSeeOther)
+}
 
-	fmt.Fprintf(w, "File %s uploaded successfully!", header.Filename)
+// filesAPIHandler returns the list of uploaded filenames as JSON
+func filesAPIHandler(w http.ResponseWriter, r *http.Request) {
+    entries, err := os.ReadDir(uploadDir)
+    if err != nil {
+        http.Error(w, "Unable to read uploads: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+    names := make([]string, 0, len(entries))
+    for _, e := range entries {
+        if !e.IsDir() {
+            names = append(names, e.Name())
+        }
+    }
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(names)
+}
+
+// getLocalIP finds the first non-loopback IPv4 address
+func getLocalIP() string {
+    addrs, err := net.InterfaceAddrs()
+    if err != nil {
+        return ""
+    }
+    for _, addr := range addrs {
+        if ipnet, ok := addr.(*net.IPNet); ok &&
+            !ipnet.IP.IsLoopback() &&
+            ipnet.IP.To4() != nil {
+            return ipnet.IP.String()
+        }
+    }
+    return ""
 }

@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>File Transfer</title>
+    <title>📤 File Transfer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
       body {
@@ -51,6 +51,10 @@
         background-color: #ecf6fc;
         border-radius: 8px;
         cursor: pointer;
+        transition: background-color 0.3s;
+      }
+      input[type="file"]:hover {
+        background-color: #d0e7fa;
       }
 
       input[type="submit"] {
@@ -80,6 +84,13 @@
         border-radius: 8px;
         margin-bottom: 10px;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background-color 0.3s;
+      }
+      li:hover {
+        background-color: #eef7fd;
       }
 
       a {
@@ -114,8 +125,14 @@
   <body>
     <div class="container">
       <div class="upload-section">
+        <h1>📤 File Transfer</h1>
         <h1>Upload a File</h1>
-        <form method="POST" action="/upload" enctype="multipart/form-data">
+        <form
+          id="uploadForm"
+          method="POST"
+          action="/upload"
+          enctype="multipart/form-data"
+        >
           <input type="file" name="file" required />
           <input type="submit" value="Upload" />
         </form>
@@ -128,24 +145,31 @@
     </div>
 
     <script>
+      // Load and list files
       async function loadFiles() {
-        const response = await fetch("/files/");
-        const text = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(text, "text/html");
-        const links = doc.querySelectorAll("a");
+        const response = await fetch("/api/files");
+        const files = await response.json();
         const fileList = document.getElementById("fileList");
         fileList.innerHTML = "";
-        links.forEach((link) => {
-          const fileName = link.textContent.trim();
-          if (fileName !== "Parent Directory") {
+        if (files.length === 0) {
+          fileList.innerHTML = "<li><em>No files uploaded yet.</em></li>";
+        } else {
+          files.forEach((name) => {
             const li = document.createElement("li");
-            li.innerHTML = `<a href="/files/${link.getAttribute("href")}">${fileName}</a>`;
+            li.innerHTML = `
+              <span>${name}</span>
+              <a href="/files/${encodeURIComponent(name)}" target="_blank">Download</a>
+            `;
             fileList.appendChild(li);
-          }
-        });
+          });
+        }
       }
+
+      // On page load
       loadFiles();
+
+      // Optionally: refresh list every 10 seconds
+      setInterval(loadFiles, 10000);
     </script>
   </body>
 </html>
