@@ -53,6 +53,7 @@
         cursor: pointer;
         transition: background-color 0.3s;
       }
+
       input[type="file"]:hover {
         background-color: #d0e7fa;
       }
@@ -72,6 +73,125 @@
         background: linear-gradient(to right, #2ecc71, #3498db);
       }
 
+      .progress-container {
+        margin-top: 15px;
+        display: none;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 20px;
+        background-color: #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(to right, #3498db, #2ecc71);
+        width: 0%;
+        transition: width 0.3s ease;
+        border-radius: 10px;
+      }
+
+      .progress-text {
+        text-align: center;
+        margin-top: 8px;
+        font-size: 14px;
+        color: #2c3e50;
+        font-weight: 500;
+      }
+
+      .progress-details {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 8px;
+        font-size: 12px;
+        color: #555;
+      }
+
+      .progress-size {
+        font-weight: 500;
+      }
+
+      .progress-speed {
+        font-weight: 500;
+        color: #3498db;
+      }
+
+      .network-info {
+        margin-top: 8px;
+        padding: 8px;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        font-size: 11px;
+        color: #666;
+        border: 1px solid #e9ecef;
+      }
+
+      .network-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .network-ip {
+        font-weight: 500;
+        color: #2c3e50;
+      }
+
+      .network-protocol {
+        font-weight: 500;
+        color: #e74c3c;
+        font-size: 10px;
+        background: #fff;
+        padding: 2px 6px;
+        border-radius: 3px;
+        border: 1px solid #ddd;
+      }
+
+      .protocol-info {
+        margin: 10px 0;
+        padding: 8px 12px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 500;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .protocol-badge {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 2px 8px;
+        border-radius: 12px;
+        margin-left: 8px;
+        font-size: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .upload-status {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 8px;
+        display: none;
+        font-weight: 500;
+      }
+
+      .upload-status.success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+
+      .upload-status.error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
       ul {
         list-style-type: none;
         padding: 0;
@@ -89,6 +209,7 @@
         align-items: center;
         transition: background-color 0.3s;
       }
+
       li:hover {
         background-color: #eef7fd;
       }
@@ -103,7 +224,6 @@
         text-decoration: underline;
       }
 
-      /* Responsive Design */
       @media screen and (max-width: 768px) {
         .container {
           flex-direction: column;
@@ -127,15 +247,37 @@
       <div class="upload-section">
         <h1>📤 File Transfer</h1>
         <h1>Upload a File</h1>
+        <div class="protocol-info" id="protocolInfo">
+          Network Protocol: HTTP over <span class="protocol-badge" id="protocolBadge">TCP</span>
+        </div>
         <form
           id="uploadForm"
           method="POST"
           action="/upload"
           enctype="multipart/form-data"
         >
-          <input type="file" name="file" required />
-          <input type="submit" value="Upload" />
+          <input type="file" name="file" id="fileInput" required />
+          <input type="submit" value="Upload" id="uploadButton" />
         </form>
+        
+        <div class="progress-container" id="progressContainer">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="progress-text" id="progressText">0%</div>
+          <div class="progress-details">
+            <span class="progress-size" id="progressSize">0 B / 0 B</span>
+            <span class="progress-speed" id="progressSpeed">0 B/s</span>
+          </div>
+          <div class="network-info" id="networkInfo">
+            <div class="network-details">
+              <span class="network-ip" id="networkIP">Detecting network...</span>
+              <span class="network-protocol" id="networkProtocol">HTTP/TCP</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="upload-status" id="uploadStatus"></div>
       </div>
 
       <div class="file-section">
@@ -145,31 +287,234 @@
     </div>
 
     <script>
-      // Load and list files
-      async function loadFiles() {
-        const response = await fetch("/api/files");
-        const files = await response.json();
-        const fileList = document.getElementById("fileList");
-        fileList.innerHTML = "";
-        if (files.length === 0) {
-          fileList.innerHTML = "<li><em>No files uploaded yet.</em></li>";
-        } else {
-          files.forEach((name) => {
-            const li = document.createElement("li");
-            li.innerHTML = `
-              <span>${name}</span>
-              <a href="/files/${encodeURIComponent(name)}" target="_blank">Download</a>
-            `;
-            fileList.appendChild(li);
+      // Network information detection
+      async function getNetworkInfo() {
+        try {
+          // Get client IP and network info
+          const response = await fetch('/api/network-info');
+          if (response.ok) {
+            return await response.json();
+          }
+        } catch (err) {
+          console.log('Could not fetch network info from server');
+        }
+        
+        // Fallback: detect from browser
+        return {
+          clientIP: await getClientIP(),
+          serverIP: window.location.hostname,
+          protocol: 'HTTP/TCP',
+          port: window.location.port || '1234'
+        };
+      }
+
+      async function getClientIP() {
+        try {
+          // Try to get IP from WebRTC (works locally)
+          return new Promise((resolve) => {
+            const pc = new RTCPeerConnection({iceServers: []});
+            pc.createDataChannel('');
+            pc.createOffer().then(offer => pc.setLocalDescription(offer));
+            
+            pc.onicecandidate = (ice) => {
+              if (ice && ice.candidate && ice.candidate.candidate) {
+                const candidate = ice.candidate.candidate;
+                const ipMatch = candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3})/);
+                if (ipMatch) {
+                  pc.close();
+                  resolve(ipMatch[1]);
+                  return;
+                }
+              }
+            };
+            
+            // Timeout fallback
+            setTimeout(() => {
+              pc.close();
+              resolve(window.location.hostname || 'localhost');
+            }, 1000);
           });
+        } catch (err) {
+          return window.location.hostname || 'localhost';
         }
       }
 
-      // On page load
-      loadFiles();
+      async function loadFiles() {
+        try {
+          const response = await fetch("/api/files");
+          const files = await response.json();
+          const fileList = document.getElementById("fileList");
+          fileList.innerHTML = "";
 
-      // Optionally: refresh list every 10 seconds
+          if (files.length === 0) {
+            fileList.innerHTML = "<li><em>No files uploaded yet.</em></li>";
+          } else {
+            files.forEach((name) => {
+              const li = document.createElement("li");
+              li.innerHTML = `
+                <span>${name}</span>
+                <a href="/files/${encodeURIComponent(name)}" download>Download</a>
+              `;
+              fileList.appendChild(li);
+            });
+          }
+        } catch (err) {
+          console.error("Error loading files:", err);
+        }
+      }
+
+      // Handle form submission with progress tracking
+      document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const fileInput = document.getElementById('fileInput');
+        const uploadButton = document.getElementById('uploadButton');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const progressSize = document.getElementById('progressSize');
+        const progressSpeed = document.getElementById('progressSpeed');
+        const networkIP = document.getElementById('networkIP');
+        const networkProtocol = document.getElementById('networkProtocol');
+        const uploadStatus = document.getElementById('uploadStatus');
+        
+        if (!fileInput.files[0]) {
+          showStatus('Please select a file to upload.', 'error');
+          return;
+        }
+        
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        // Variables for speed calculation
+        let startTime = Date.now();
+        let lastLoaded = 0;
+        let lastTime = startTime;
+        
+        // Get network information
+        const networkInfo = await getNetworkInfo();
+        
+        // Reset and show progress elements
+        progressFill.style.width = '0%';
+        progressText.textContent = '0%';
+        progressSize.textContent = `0 B / ${formatBytes(file.size)}`;
+        progressSpeed.textContent = '0 B/s';
+        networkIP.textContent = `${networkInfo.clientIP} → ${networkInfo.serverIP}:${networkInfo.port}`;
+        networkProtocol.textContent = networkInfo.protocol;
+        progressContainer.style.display = 'block';
+        uploadStatus.style.display = 'none';
+        uploadButton.disabled = true;
+        uploadButton.value = 'Uploading...';
+        
+        // Create XMLHttpRequest for progress tracking
+        const xhr = new XMLHttpRequest();
+        
+        // Track upload progress
+        xhr.upload.addEventListener('progress', function(e) {
+          if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            const currentTime = Date.now();
+            
+            // Update progress bar and percentage
+            progressFill.style.width = percentComplete + '%';
+            progressText.textContent = Math.round(percentComplete) + '%';
+            
+            // Update size information
+            progressSize.textContent = `${formatBytes(e.loaded)} / ${formatBytes(e.total)}`;
+            
+            // Calculate and update speed
+            const timeDiff = currentTime - lastTime;
+            if (timeDiff > 100) { // Update speed every 100ms to smooth out fluctuations
+              const bytesDiff = e.loaded - lastLoaded;
+              const speed = (bytesDiff / timeDiff) * 1000; // bytes per second
+              progressSpeed.textContent = formatBytes(speed) + '/s';
+              
+              lastLoaded = e.loaded;
+              lastTime = currentTime;
+            }
+          }
+        });
+        
+        // Handle successful upload
+        xhr.addEventListener('load', function() {
+          if (xhr.status === 200 || xhr.status === 303) {
+            progressFill.style.width = '100%';
+            progressText.textContent = '100%';
+            progressSize.textContent = `${formatBytes(file.size)} / ${formatBytes(file.size)}`;
+            progressSpeed.textContent = 'Complete';
+            showStatus('File uploaded successfully!', 'success');
+            fileInput.value = ''; // Clear file input
+            loadFiles(); // Refresh file list
+            
+            // Hide progress bar after a delay
+            setTimeout(() => {
+              progressContainer.style.display = 'none';
+            }, 3000);
+          } else {
+            showStatus('Upload failed. Please try again.', 'error');
+            progressContainer.style.display = 'none';
+          }
+          
+          // Reset button
+          uploadButton.disabled = false;
+          uploadButton.value = 'Upload';
+        });
+        
+        // Handle upload error
+        xhr.addEventListener('error', function() {
+          showStatus('Upload failed. Please check your connection and try again.', 'error');
+          progressContainer.style.display = 'none';
+          uploadButton.disabled = false;
+          uploadButton.value = 'Upload';
+        });
+        
+        // Send the request
+        xhr.open('POST', '/upload');
+        xhr.send(formData);
+      });
+      
+      // Format bytes to human readable format
+      function formatBytes(bytes, decimals = 2) {
+        if (bytes === 0) return '0 B';
+        
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+        
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+      }
+      
+      function showStatus(message, type) {
+        const uploadStatus = document.getElementById('uploadStatus');
+        uploadStatus.textContent = message;
+        uploadStatus.className = `upload-status ${type}`;
+        uploadStatus.style.display = 'block';
+        
+        // Hide status message after 5 seconds
+        setTimeout(() => {
+          uploadStatus.style.display = 'none';
+        }, 5000);
+      }
+
+      // Load on page load and refresh every 10 seconds
+      loadFiles();
       setInterval(loadFiles, 10000);
+      
+      // Load network info on page load
+      updateProtocolInfo();
+      
+      async function updateProtocolInfo() {
+        try {
+          const networkInfo = await getNetworkInfo();
+          const protocolBadge = document.getElementById('protocolBadge');
+          protocolBadge.textContent = networkInfo.connectionType || 'TCP';
+        } catch (err) {
+          console.log('Could not update protocol info');
+        }
+      }
     </script>
   </body>
 </html>
