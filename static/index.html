@@ -1,23 +1,26 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" href="/localsend.png" type="image/png" />
     <title>📤 File Transfer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
       body {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(to right, #74ebd5, #acb6e5);
+        background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #252525 100%);
         margin: 0;
         padding: 0;
+        min-height: 100vh;
       }
 
       .container {
         max-width: 900px;
         margin: 50px auto;
-        background-color: #fff;
+        background-color: #1e1e1e;
         border-radius: 16px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+        border: 1px solid #333333;
         display: flex;
         flex-direction: row;
         overflow: hidden;
@@ -34,9 +37,10 @@
 
       h1,
       h2 {
-        color: #2c3e50;
+        color: #e2e8f0;
         margin-bottom: 20px;
         font-size: 1.6em;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
       }
 
       form {
@@ -47,30 +51,43 @@
 
       input[type="file"] {
         padding: 10px;
-        border: 2px dashed #3498db;
-        background-color: #ecf6fc;
+        border: 2px dashed #555555;
+        background-color: #2a2a2a;
+        color: #e2e8f0;
         border-radius: 8px;
         cursor: pointer;
-        transition: background-color 0.3s;
+        transition: all 0.3s;
       }
 
       input[type="file"]:hover {
-        background-color: #d0e7fa;
+        background-color: #353535;
+        border-color: #777777;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
       }
 
       input[type="submit"] {
         padding: 12px;
-        background: linear-gradient(to right, #3498db, #2ecc71);
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
         color: white;
         border: none;
         border-radius: 8px;
         font-size: 16px;
         cursor: pointer;
-        transition: background 0.3s ease;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
       }
 
       input[type="submit"]:hover {
-        background: linear-gradient(to right, #2ecc71, #3498db);
+        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(59, 130, 246, 0.4);
+      }
+
+      input[type="submit"]:disabled {
+        background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
       }
 
       .progress-container {
@@ -81,25 +98,27 @@
       .progress-bar {
         width: 100%;
         height: 20px;
-        background-color: #e0e0e0;
+        background-color: #2a2a2a;
         border-radius: 10px;
         overflow: hidden;
-        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+        border: 1px solid #404040;
       }
 
       .progress-fill {
         height: 100%;
-        background: linear-gradient(to right, #3498db, #2ecc71);
+        background: linear-gradient(90deg, #3b82f6 0%, #06b6d4 50%, #10b981 100%);
         width: 0%;
         transition: width 0.3s ease;
         border-radius: 10px;
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
       }
 
       .progress-text {
         text-align: center;
         margin-top: 8px;
         font-size: 14px;
-        color: #2c3e50;
+        color: #e2e8f0;
         font-weight: 500;
       }
 
@@ -108,26 +127,27 @@
         justify-content: space-between;
         margin-top: 8px;
         font-size: 12px;
-        color: #555;
+        color: #94a3b8;
       }
 
       .progress-size {
         font-weight: 500;
+        color: #cbd5e1;
       }
 
       .progress-speed {
         font-weight: 500;
-        color: #3498db;
+        color: #06b6d4;
       }
 
       .network-info {
         margin-top: 8px;
         padding: 8px;
-        background-color: #f8f9fa;
+        background-color: #2a2a2a;
         border-radius: 6px;
         font-size: 11px;
-        color: #666;
-        border: 1px solid #e9ecef;
+        color: #a0a0a0;
+        border: 1px solid #404040;
       }
 
       .network-details {
@@ -138,38 +158,220 @@
 
       .network-ip {
         font-weight: 500;
-        color: #2c3e50;
+        color: #e2e8f0;
       }
 
       .network-protocol {
         font-weight: 500;
-        color: #e74c3c;
+        color: #f87171;
         font-size: 10px;
-        background: #fff;
+        background: #1a1a1a;
         padding: 2px 6px;
         border-radius: 3px;
-        border: 1px solid #ddd;
+        border: 1px solid #404040;
       }
 
       .protocol-info {
         margin: 10px 0;
         padding: 8px 12px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
         color: white;
         border-radius: 8px;
         font-size: 12px;
         font-weight: 500;
         text-align: center;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+        border: 1px solid rgba(59, 130, 246, 0.3);
       }
 
       .protocol-badge {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.1);
         padding: 2px 8px;
         border-radius: 12px;
         margin-left: 8px;
         font-size: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .theme-toggle {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        border: none;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
+        transition: all 0.3s ease;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .theme-toggle:hover {
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 6px 12px rgba(139, 92, 246, 0.4);
+        background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+      }
+
+      .theme-toggle-icon {
+        width: 24px;
+        height: 24px;
+        transition: transform 0.3s ease;
+      }
+
+      .theme-toggle-icon svg {
+        width: 100%;
+        height: 100%;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      /* Light theme overrides */
+      body.light-theme {
+        background: linear-gradient(to right, #74ebd5, #acb6e5);
+      }
+
+      body.light-theme .container {
+        background-color: #fff;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      }
+
+      body.light-theme h1,
+      body.light-theme h2 {
+        color: #2c3e50;
+        text-shadow: none;
+      }
+
+      body.light-theme input[type="file"] {
+        background-color: #ecf6fc;
+        color: #2c3e50;
+        border-color: #3498db;
+      }
+
+      body.light-theme input[type="file"]:hover {
+        background-color: #d0e7fa;
+        border-color: #2980b9;
+        box-shadow: none;
+      }
+
+      body.light-theme input[type="submit"] {
+        background: linear-gradient(to right, #3498db, #2ecc71);
+        box-shadow: none;
+      }
+
+      body.light-theme input[type="submit"]:hover {
+        background: linear-gradient(to right, #2ecc71, #3498db);
+        transform: none;
+        box-shadow: none;
+      }
+
+      body.light-theme .progress-bar {
+        background-color: #e0e0e0;
+        border: none;
+      }
+
+      body.light-theme .progress-fill {
+        background: linear-gradient(to right, #3498db, #2ecc71);
+        box-shadow: none;
+      }
+
+      body.light-theme .progress-text {
+        color: #2c3e50;
+      }
+
+      body.light-theme .progress-details {
+        color: #555;
+      }
+
+      body.light-theme .progress-size {
+        color: #2c3e50;
+      }
+
+      body.light-theme .progress-speed {
+        color: #3498db;
+      }
+
+      body.light-theme .network-info {
+        background-color: #f8f9fa;
+        color: #666;
+        border: 1px solid #e9ecef;
+      }
+
+      body.light-theme .network-ip {
+        color: #2c3e50;
+      }
+
+      body.light-theme .network-protocol {
+        color: #e74c3c;
+        background: #fff;
+        border: 1px solid #ddd;
+      }
+
+      body.light-theme .protocol-info {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border: none;
+      }
+
+      body.light-theme .upload-status.success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+
+      body.light-theme .upload-status.error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
+      body.light-theme li {
+        background: #f9f9f9;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      }
+
+      body.light-theme li:hover {
+        background-color: #eef7fd;
+        border-color: #3498db;
+        box-shadow: 0 4px 10px rgba(52, 152, 219, 0.2);
+      }
+
+      body.light-theme .file-name {
+        color: #2c3e50;
+      }
+
+      body.light-theme .file-name:hover {
+        background-color: rgba(52, 152, 219, 0.1);
+      }
+
+      body.light-theme a {
+        color: #2980b9;
+      }
+
+      body.light-theme a:hover {
+        background-color: rgba(52, 152, 219, 0.1);
+        color: #1f618d;
+      }
+
+      body.light-theme .theme-toggle {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
+      }
+
+      body.light-theme .theme-toggle:hover {
+        box-shadow: 0 6px 12px rgba(245, 158, 11, 0.4);
+        background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
       }
 
       .upload-status {
@@ -181,15 +383,15 @@
       }
 
       .upload-status.success {
-        background-color: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
+        background-color: #065f46;
+        color: #10b981;
+        border: 1px solid #047857;
       }
 
       .upload-status.error {
-        background-color: #f8d7da;
-        color: #721c24;
-        border: 1px solid #f5c6cb;
+        background-color: #7f1d1d;
+        color: #f87171;
+        border: 1px solid #991b1b;
       }
 
       ul {
@@ -199,29 +401,69 @@
       }
 
       li {
-        background: #f9f9f9;
+        background: #2a2a2a;
         padding: 10px 15px;
         border-radius: 8px;
         margin-bottom: 10px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+        border: 1px solid #404040;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        transition: background-color 0.3s;
+        transition: all 0.3s;
+        min-height: 40px;
+        gap: 12px;
       }
 
       li:hover {
-        background-color: #eef7fd;
+        background-color: #353535;
+        border-color: #606060;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+      }
+
+      .file-name {
+        color: #e2e8f0;
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 14px;
+        line-height: 1.4;
+        margin-right: 8px;
+      }
+
+      .file-name:hover {
+        white-space: normal;
+        word-break: break-all;
+        overflow: visible;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 4px 6px;
+        border-radius: 4px;
+        margin: -4px -6px;
+        z-index: 10;
+        position: relative;
+      }
+
+      .download-btn {
+        flex-shrink: 0;
+        min-width: 80px;
+        text-align: center;
       }
 
       a {
-        color: #2980b9;
+        color: #06b6d4;
         text-decoration: none;
         font-weight: 500;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.3s;
       }
 
       a:hover {
-        text-decoration: underline;
+        background-color: rgba(6, 182, 212, 0.2);
+        color: #67e8f9;
+        text-decoration: none;
       }
 
       @media screen and (max-width: 768px) {
@@ -243,6 +485,15 @@
     </style>
   </head>
   <body>
+    <button class="theme-toggle" id="themeToggle" title="Toggle Theme">
+      <div class="theme-toggle-icon" id="themeIcon">
+        <!-- Moon icon for dark theme -->
+        <svg viewBox="0 0 24 24">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </div>
+    </button>
+    
     <div class="container">
       <div class="upload-section">
         <h1>📤 File Transfer</h1>
@@ -352,8 +603,8 @@
             files.forEach((name) => {
               const li = document.createElement("li");
               li.innerHTML = `
-                <span>${name}</span>
-                <a href="/files/${encodeURIComponent(name)}" download>Download</a>
+                <span class="file-name" title="${name}">${name}</span>
+                <a href="/files/${encodeURIComponent(name)}" download class="download-btn">Download</a>
               `;
               fileList.appendChild(li);
             });
@@ -513,6 +764,52 @@
           protocolBadge.textContent = networkInfo.connectionType || 'TCP';
         } catch (err) {
           console.log('Could not update protocol info');
+        }
+      }
+
+      // Theme toggle functionality
+      const themeToggle = document.getElementById('themeToggle');
+      const themeIcon = document.getElementById('themeIcon');
+      
+      // SVG icons
+      const moonIcon = `
+        <svg viewBox="0 0 24 24">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      `;
+      
+      const sunIcon = `
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2"></path>
+          <path d="M12 20v2"></path>
+          <path d="m4.93 4.93 1.41 1.41"></path>
+          <path d="m17.66 17.66 1.41 1.41"></path>
+          <path d="M2 12h2"></path>
+          <path d="M20 12h2"></path>
+          <path d="m6.34 17.66-1.41 1.41"></path>
+          <path d="m19.07 4.93-1.41 1.41"></path>
+        </svg>
+      `;
+      
+      // Set dark as default theme
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      applyTheme(savedTheme);
+      
+      themeToggle.addEventListener('click', function() {
+        const currentTheme = document.body.classList.contains('light-theme') ? 'light' : 'dark';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        applyTheme(newTheme);
+        localStorage.setItem('theme', newTheme);
+      });
+      
+      function applyTheme(theme) {
+        if (theme === 'light') {
+          document.body.classList.add('light-theme');
+          themeIcon.innerHTML = sunIcon;
+        } else {
+          document.body.classList.remove('light-theme');
+          themeIcon.innerHTML = moonIcon;
         }
       }
     </script>
